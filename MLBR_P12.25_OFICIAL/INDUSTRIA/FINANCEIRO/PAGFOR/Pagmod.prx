@@ -1,0 +1,91 @@
+#include "rwmake.ch"        // incluido pelo assistente de conversao do AP5 IDE em 26/09/00
+/*-------------------------------------------------------------------
+---------------------------------------------------------------------
+Atualizacoes: AOliveira 20-07-2011, criado variavel _cSeek,com o 
+              valor E2_FILIAL+E2_NUMBOR+E2_PREFIXO+E2_NUM e realizado 
+              inclusão de Alias no GETAREA, p/ SEA e SE2, e para o 
+              retorno vazio posicionar no SEA com a Chave 
+              SE2->(E2_FILIAL+E2_NUMBOR+E2_PREFIXO+E2_NUM)e retornar, 
+              SubStr(SEA->EA_MODELO,1,2). 
+---------------------------------------------------------*/
+
+User Function Pagmod()        // incluido pelo assistente de conversao do AP5 IDE em 26/09/00
+
+//ÚÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ¿
+//³ Declaracao de variaveis utilizadas no programa atraves da funcao    ³
+//³ SetPrvt, que criara somente as variaveis definidas pelo usuario,    ³
+//³ identificando as variaveis publicas do sistema utilizadas no codigo ³
+//³ Incluido pelo assistente de conversao do AP5 IDE                    ³
+//ÀÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÙ
+LOCAL cBordero 	:= IIF(!Empty(SEA-> EA_NUMBOR),SEA->EA_NUMBOR,SE2->E2_NUMBOR)
+Local _cSeek	:= SE2->(E2_FILIAL+E2_NUMBOR+E2_PREFIXO+E2_NUM)
+LOCAL aMidSEA	:= SEA->(GetArea())                   
+LOCAL aMidSE2  	:= SE2->(GetArea())
+Local _aModel  	:= "" //SubStr(SEA->EA_MODELO,1,2)
+
+SetPrvt("_AMODEL")
+ 
+/////  PROGRAMA PARA INDICAR A MODALIDADE DO PAGAMENTO
+/////  CNAB BRADESCO A PAGAR (PAGFOR) - POSICOES (264-265)
+DbSelectArea("SEA")
+While 	SEA->(!Eof()) .And. SEA->EA_NUMBOR == cBordero
+	IF SEA->EA_CART <> "P"
+		SEA->(dbSkip())
+	Else
+		_aModel := SUBSTR(SEA->EA_MODELO,1,2)
+ 
+		
+		IF _aModel == "  "
+			IF SUBSTR(SE2->E2_CODBAR,1,3) == "237"
+				_aModel := "30"
+			ELSE
+				_aModel := "31"
+			ENDIF
+		ELSE		
+			If _aModel == "30"	//TITULOS RASTREADOS DDA E CONCILIADO
+				_aModel := "31"		//embora seja titulo rastreado DDA o agendamento é feito pelo PAGFOR (15/10/2010)
+		
+			EndIf
+		ENDIF
+		
+		
+	ENDIF
+	SEA->(dbSkip())
+EndDo
+
+If Empty(_aModel)
+	DbSelectArea("SEA")
+	SEA->(DbSetOrder(1))
+	SEA->(DbSeek(_cSeek))
+	_aModel := SUBSTR(SEA->EA_MODELO,1,2)
+	//Alert("Erro na geração da Modalidade!Favor avisar a TI...")
+	While 	SEA->(!Eof()) .And. SEA->EA_NUMBOR == cBordero
+		IF SEA->EA_CART <> "P"
+			SEA->(dbSkip())
+		Else
+			_aModel := SUBSTR(SEA->EA_MODELO,1,2)
+						
+			IF _aModel == "  "
+				IF SUBSTR(SE2->E2_CODBAR,1,3) == "237"
+					_aModel := "30"
+				ELSE
+					_aModel := "31"
+				ENDIF
+			ELSE
+				If _aModel == "30"	//TITULOS RASTREADOS DDA E CONCILIADO
+					_aModel := "31"		//embora seja titulo rastreado DDA o agendamento é feito pelo PAGFOR (15/10/2010)
+					
+				EndIf
+			ENDIF
+			
+		ENDIF
+		SEA->(dbSkip())
+	EndDo
+	
+EndIf
+
+RestArea(aMidSEA)
+RestArea(aMidSE2)
+
+// Substituido pelo assistente de conversao do AP5 IDE em 26/09/00 ==> __Return(_aModel)
+Return(_aModel)        // incluido pelo assistente de conversao do AP5 IDE em 26/09/00

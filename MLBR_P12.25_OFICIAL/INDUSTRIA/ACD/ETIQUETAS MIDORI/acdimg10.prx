@@ -1,0 +1,137 @@
+#INCLUDE "TOTVS.CH"
+/*
+Padrao Zebra
+ÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜ
+±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±
+±±ÉÍÍÍÍÍÍÍÍÍÍÑÍÍÍÍÍÍÍÍÍÍËÍÍÍÍÍÍÍÑÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍËÍÍÍÍÍÍÑÍÍÍÍÍÍÍÍÍÍÍÍÍ»±±
+±±ºPrograma  ³IMG10     ºAutor  ³Anderson Rodrigues  º Data ³  25/02/03   º±±
+±±ÌÍÍÍÍÍÍÍÍÍÍØÍÍÍÍÍÍÍÍÍÍÊÍÍÍÍÍÍÍÏÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÊÍÍÍÍÍÍÏÍÍÍÍÍÍÍÍÍÍÍÍÍ¹±±
+±±ºDescricao ³Ponto de entrada referente a imagem de identificacao do     º±±
+±±º          ³Pallet                                                      º±±
+±±ÌÍÍÍÍÍÍÍÍÍÍØÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍ¹±±
+±±ºUso       ³AP6                                                         º±±
+±±ÈÍÍÍÍÍÍÍÍÍÍÏÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍ¼±±
+±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±
+ßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßß
+*/
+
+User Function IMG10  // imagem do Pallet
+Local cSpool := AllTrim( SuperGetMV("MV_ZZSPL05",.f.,"P2GRAN") )
+
+Local cCodigo:= Paramixb[1] // Codigo da etiqueta do Pallet         
+
+Local cSql     := "" 
+Local cAlias   := GetNextAlias()
+Local aArea    := GetArea()
+
+Local cProduto := ""
+Local cDescric := ""
+Local nQtde    := 0
+Local lEntre   := .f.
+Local cLocal   := ""
+
+/*CB0->(dbSetOrder(5))
+If CB0->(dbSeek(xFilial("CB0")+cCodigo))
+
+	CB0->(dbSetOrder(1))
+	If !CB0->(dbSeek(xFilial("CB0")+cCodigo ))
+		RecLock("CB0",.T.)
+		CB0->CB0_FILIAL := xFilial("CB0")
+		CB0->CB0_CODETI := cCodigo
+		CB0->CB0_DTNASC := dDataBase
+		CB0->CB0_TIPO   := '04'
+		CB0->CB0_USUARI := RetCodUsr()
+		CB0->(MsUnlock())
+	EndIf
+
+EndIf
+*/
+  
+cSql += "SELECT CB0_CODPRO, CB0_LOCAL, SUM( CB0_QTDE ) CB0_QTDE "
+cSql += "  FROM CB0010 CB0 "
+cSql += " WHERE CB0.CB0_FILIAL = '"+xFilial("CB0")+"' "
+cSql += "   AND CB0.CB0_PALLET = '"+cCodigo+"' "
+cSql += "   AND CB0.CB0_TIPO = '01' "
+cSql += "   AND CB0.D_E_L_E_T_ = ' ' "
+cSql += " GROUP BY CB0_CODPRO, CB0_LOCAL "
+cSql += " ORDER BY 2,1 "
+
+DbUseArea(.T.,"TOPCONN",TcGenQry(,,cSql),cAlias,.T.,.T.)
+dbGoTop()    
+cProduto := (cAlias)->CB0_CODPRO
+cDescric := Posicione("SB1",1,xFilial("SB1")+cProduto, "B1_DESC" )
+nQtde    := (cAlias)->CB0_QTDE          
+cLocal   := (cAlias)->CB0_LOCAL
+
+If ! Eof()   //Grava na CB0 a etiqueta do Pallet como tipo 04
+
+	CB0->(dbSetOrder(1))
+	If !CB0->(dbSeek(xFilial("CB0")+cCodigo ))
+		RecLock("CB0",.T.)
+		CB0->CB0_FILIAL := xFilial("CB0")
+		CB0->CB0_CODETI := cCodigo
+		CB0->CB0_DTNASC := dDataBase
+		CB0->CB0_TIPO   := '01'
+		CB0->CB0_USUARI := RetCodUsr()
+		CB0->CB0_QTDE   := nQtde
+		CB0->CB0_CODPRO := cProduto
+		CB0->CB0_ETQPAL := 'S'
+		CB0->CB0_LOCAL  := cLocal
+		CB0->(MsUnlock())
+	EndIf
+
+EndIf
+
+
+dbSkip()
+        
+// verifica se tem mais produtos no pallet
+While ! Eof()
+	lEntre := .t.
+	Exit
+Enddo
+	
+dbCloseArea()
+RestArea( aArea )
+cSpool := Upper( AllTrim( cSpool ) )
+MSCBPRINTER( "ZEBRA", "SPOOL",/* [ nDensidade ]*/, /*[ nTamanho ]*/, .F., /*"1290"*/, /*"172.17.0.161"*/, /*[ cEnv ]*/, /*[ nMemoria ]*/, cSpool, /*[ lDrvWin ]*/, /*[ cPathSpool ]*/ )
+MSCBCHKSTATUS(.f.)
+MSCBBEGIN(1,6)            
+
+MscbWrite("CT~~CD,~CC^~CT~")
+MscbWrite("^XA~TA000~JSN^LT0^MNW^MTT^PON^PMN^LH0,0^JMA^PR4,4~SD15^JUS^LRN^CI0^XZ")
+MscbWrite("^XA")
+MscbWrite("^MMT")
+MscbWrite("^PW815")
+MscbWrite("^LL1215")
+MscbWrite("^LS0")
+MscbWrite("^BY7,3,140^FT243,952^BCB,,Y,N")
+MscbWrite("^FD>;"+cCodigo+"^FS")
+MscbWrite("^FT775,783^A0B,45,129^FH\^FDPALETE^FS")
+MscbWrite("^FO317,29^GB0,1156,8^FS")
+MscbWrite("^FO87,30^GB0,1156,7^FS")
+MscbWrite("^FO527,23^GB154,560,8^FS")
+MscbWrite("^FO528,575^GB153,612,8^FS")
+MscbWrite("^FT74,1182^A0B,34,33^FH\^FDEtiqueta de Volume - Palete^FS")
+//ALTERAÇÃO DA FILIAL - 04/10
+MscbWrite("^FT74,514^A0B,34,33^FH\^FD"+IIf(AllTrim(SM0->M0_CODFIL)=='08','PNP2', IIf(AllTrim(SM0->M0_CODFIL)=='19','BRB','') )+"^FS")
+MscbWrite("^FT74,383^A0B,34,33^FH\^FDMidori Auto Leather Brasil^FS")
+MscbWrite("^FT362,1181^A0B,28,28^FH\^FDCodigo do Produto: "+cProduto+"^FS")
+MscbWrite("^FT412,1182^A0B,39,38^FH\^FD"+SubStr(SB1->B1_DESC,01,50)+"^FS")
+MscbWrite("^FT457,1182^A0B,39,38^FH\^FD"+SubStr(SB1->B1_DESC,51,50)+"^FS")
+MscbWrite("^FT523,228^A0B,28,28^FH\^FDData: "+DtoC(dDataBase)+"^FS")
+MscbWrite("^FT569,1000^A0B,28,28^FH\^FDUnidade de Medida^FS")
+MscbWrite("^FT569,371^A0B,28,28^FH\^FDQuantidade^FS")
+MscbWrite("^FT634,508^A0B,52,57^FH\^FD"+Transform(nQtde,"@E 999,999,999.9999")+"^FS")
+MscbWrite("^FT634,920^A0B,52,57^FH\^FD"+SB1->B1_UM+"^FS")
+If lEntre
+	MscbWrite("^FT511,1184^A0B,28,28^FH\^FD...ENTRE OUTROS PRODUTOS^FS")
+EndIf
+MscbWrite("^LRY^FO727,20^GB0,1175,61^FS^LRN")
+MscbWrite("^PQ1,0,1,Y^XZ")
+MSCBEND()
+
+MSCBCLOSEPRINTER()       
+
+
+Return .T.

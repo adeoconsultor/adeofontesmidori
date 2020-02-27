@@ -1,0 +1,52 @@
+
+#include "rwmake.ch"
+
+User Function Pagval()
+
+
+/// VALOR DO DOCUMENTO DO CODIGO DE BARRA DA POSICAO 06 - 19, NO ARQUIVO E
+/// DA POSICAO 190 - 204, QUANDO NAO FOR CODIGO DE BARRA VAI O VALOR DO SE2
+
+_nValor := Replicate("0",15)
+
+//AOliveira
+nAbatim := SomaAbat(SE2->E2_PREFIXO,SE2->E2_NUM,SE2->E2_PARCELA,"P",SE2->E2_MOEDA,dDataBase,SE2->E2_FORNECE,SE2->E2_LOJA)
+nAcresc  := ((SE2->E2_MULTA + SE2->E2_JUROS + SE2->E2_CORREC + SE2->E2_ACRESC))
+//_dBase  := CtoD("07/10/1997") //Data base p calcular fator de vecto.
+_cFator := '0000'
+
+
+	If Substr(SE2->E2_CODBAR,1,3) == "   "
+		_nValor := StrZero(((SE2->E2_SALDO + nAcresc - nAbatim) *100),15,0)
+	Else
+	//AOliveira 07-07-2011 -
+	//	If Val(Substr(SE2->E2_CODBAR,10,10)) <> SE2->E2_SALDO*100
+	
+	//Caso de Boletos sem valor //AOliveira 12-07-2011
+	//	If Substr(SE2->E2_CODBAR,6,14) == '00000000000000'
+	
+	//		_nValor := "0"+Substr(SE2->E2_CODBAR,6,14)
+	//	_cFator := STR(INT(SE2->E2_VENCREA - _dBase),4)
+	//	_nValor := "0"+ _cFator + StrZero((SE2->E2_SALDO*100),10,0)
+	
+	
+	//		ElseIf (Val(Substr(SE2->E2_CODBAR,10,10)) - SE2->E2_SALDO*100) == 1
+	//			_nValor := "0"+Substr(SE2->E2_CODBAR,6,14)
+	//		Else
+	//			_nValor := "0"+Substr(SE2->E2_CODBAR,6,4)+StrZero((SE2->E2_SALDO*100),10,0)
+	
+	//	EndIf
+	
+	//Else
+	
+	
+	_nValor := "0"+Substr(SE2->E2_CODBAR,6,14)
+	//EndIF
+	
+	Endif
+if Val(_nValor) = 0
+	_nValor := StrZero(((SE2->E2_SALDO + nAcresc - nAbatim) *100),15,0)
+endif
+
+
+Return(_nValor)

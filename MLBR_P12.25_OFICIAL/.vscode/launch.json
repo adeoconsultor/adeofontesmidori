@@ -1,0 +1,34 @@
+{
+	"version": "0.2.0",
+	"configurations": [
+		{
+			"type": "totvs_language_debug",
+			"request": "launch",
+			"name": "Totvs Language Debug",
+			"program": "${command:AskForProgramName}",
+			"cwb": "${workspaceFolder}",
+			"smartclientBin": "D:\\TOTVS\\ADVPL_VSCODE\\Midori\\Dados\\smartclient_x64\\smartclient.exe",
+			"isMultiSession": true,
+			"enableTableSync": true,
+			"enableMultiThread": true
+		}
+	],
+	"lastPrograms": [
+		{
+			"args": [],
+			"label": "SIGAMDI",
+			"description": ""
+		},
+		{
+			"args": [],
+			"label": "SIGAADV",
+			"description": ""
+		},
+		{
+			"args": [],
+			"label": "u_ATUCOTA",
+			"description": ""
+		}
+	],
+	"lastProgramExecuted": "SIGAADV"
+}

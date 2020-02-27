@@ -1,0 +1,1185 @@
+#INCLUDE "TOTVS.CH"
+#INCLUDE "TOPCONN.CH"
+
+/*
+Padrao Zebra
+ÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜ
+±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±
+±±ÉÍÍÍÍÍÍÍÍÍÍÑÍÍÍÍÍÍÍÍÍÍËÍÍÍÍÍÍÍÑÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍËÍÍÍÍÍÍÑÍÍÍÍÍÍÍÍÍÍÍÍÍ»±±
+±±ºPrograma  ³img01     ºAutor  ³Sandro Valex        º Data ³  19/06/01   º±±
+±±ÌÍÍÍÍÍÍÍÍÍÍØÍÍÍÍÍÍÍÍÍÍÊÍÍÍÍÍÍÍÏÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÊÍÍÍÍÍÍÏÍÍÍÍÍÍÍÍÍÍÍÍÍ¹±±
+±±ºDesc.     ³Ponto de entrada referente a imagem de identificacao do     º±±
+±±º          ³produto. Padrao Microsiga                                   º±±
+±±ÌÍÍÍÍÍÍÍÍÍÍØÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍ¹±±
+±±ºUso       ³ AP5                                                        º±±
+±±ÈÍÍÍÍÍÍÍÍÍÍÏÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍ¼±±
+±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±
+ßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßß
+*/
+User Function Img01 //Identificacao de produto
+
+Local cCodigo,sConteudo,cTipoBar, nX
+Local nqtde 	:= If(len(paramixb) >= 1,paramixb[ 1],NIL)
+Local cCodSep 	:= If(len(paramixb) >= 2,paramixb[ 2],NIL)     //usuario
+Local cCodID 	:= If(len(paramixb) >= 3,paramixb[ 3],NIL)                                                   
+Local nCopias	:= If(len(paramixb) >= 4,paramixb[ 4],0)
+Local cNFEnt  	:= If(len(paramixb) >= 5,paramixb[ 5],NIL)
+Local cSeriee   := If(len(paramixb) >= 6,paramixb[ 6],NIL)
+Local cFornec   := If(len(paramixb) >= 7,paramixb[ 7],NIL)
+Local cLojafo   := If(len(paramixb) >= 8,paramixb[ 8],NIL)
+Local cArmazem  := If(len(paramixb) >= 9,paramixb[ 9],NIL)
+Local cOP       := If(len(paramixb) >=10,paramixb[10],NIL)
+Local cNumSeq   := If(len(paramixb) >=11,paramixb[11],NIL)
+Local cLote     := If(len(paramixb) >=12,paramixb[12],NIL)
+Local cSLote    := If(len(paramixb) >=13,paramixb[13],NIL)
+Local dValid    := If(len(paramixb) >=14,paramixb[14],NIL)
+Local cCC  		:= If(len(paramixb) >=15,paramixb[15],NIL)
+Local cLocOri   := If(len(paramixb) >=16,paramixb[16],NIL)
+Local cOPREQ    := If(len(paramixb) >=17,paramixb[17],NIL)
+Local cNumSerie := If(len(paramixb) >=18,paramixb[18],NIL)
+Local cOrigem   := If(len(paramixb) >=19,paramixb[19],NIL)
+Local cEndereco := If(len(paramixb) >=20,paramixb[20],NIL)
+Local cPedido   := If(len(paramixb) >=21,paramixb[21],NIL)
+Local nResto    := If(len(paramixb) >=22,paramixb[22],0)
+Local cProVolu  := "" 
+Local cItNFE    := If(len(paramixb) >=23,paramixb[23],NIL)            
+Local aMeses    := {"Janeiro","Fevereiro","Marco","Abril","Maio","Junho","Julho","Agosto","Setembro","Outubro","Novembro","Dezembro"}
+Local cSpool    := ""
+Local lEscEti   := .f.
+Local cLoteFor  := " "
+Local dDataAvul := dDataBase
+Local cPerg     := 'MDRCD01A'
+Local oPerg     := AdvPlPerg():New(cPerg)       
+Local cCodPro   := SB1->B1_COD
+Local lImpEtq   := .F.
+
+Local cParSN    := If(len(paramixb) >=25,paramixb[25],Nil)
+Local cCarrinho, nLoop
+
+Private lRVolumes:=.F.
+
+//If cParSN <> 'U'         //Esta variavel está como static. Ela vem do Fonte MTA140MNU, para controlar as impressoes de etiquetas
+//	cParSN:=cParSN
+//EndIf
+   
+//Caso a Filial seja a 09 e os produtos sejam couro, chama rotina nova de emissão de etiquetas (ACDIMG12)
+/*If AllTrim(cGrupo) == '11' .And. Alltrim(xFilial("CB0")) == '09'
+	If ProcName(2) == "ACDI10NF"                             //Impressão de etiquetas que virão da entrada da pre-nota ou transferencia
+		IMG12()
+		Return()
+	EndIf
+EndIf*/
+
+ 
+If ProcName(2) == "U_MDRACD01"
+   
+	oPerg:AddPerg( "Data da Etiqueta:"     , "D", 8 ,    )
+	oPerg:AddPerg( "Plano:"                , "C", 20,    )
+	oPerg:AddPerg( "Carrinho (S/N)?  : "   ,    ,   ,  , {"S","N"},)
+	oPerg:AddPerg( "Informe a Etiqueta : "  , "C" ,10 , , ,)
+
+	oPerg:SetPerg()
+ 
+	Pergunte( cPerg , .T.)
+	
+	dDataAvul  := MV_PAR01
+	cMdrEtPlan := MV_PAR02
+	cCarrinho  := MV_PAR03
+	cCodID     := MV_PAR04
+
+	If !Empty(cCodID)
+		cCodPro:= CB0->CB0_CODPRO
+	Else
+		cCodID := If(len(paramixb) >= 3,paramixb[ 3],NIL)
+		lX_TESTE:= .T.
+	EndIf
+
+	lImpEtq := .T.       //caso seja reimpressão habilito para imprimir a etiqueta GRANDE, pois esta variável esta sendo utilizada somente 
+                         //no apontamento da OP para controlar se imprime ou nao as etqs - (APONTPLN) - Antonio 21/09/18
+EndIf    
+
+// Se o produto não está na SBZ, não tem que imprimir a etiqueta
+dbSelectArea("SBZ")
+dbSetOrder(1)
+If ! dbSeek( xFilial("SBZ") + cCodPro )
+	Return(nil)
+EndIf
+            
+If !lImpEtq
+	If ProcName(2) == "ACDI10NF" .Or. ProcName(2) == "U_ETQACD"  //Impressão de etiquetas que virão da entrada da pre-nota ou transferencia
+		If SBZ->BZ_XCARRI == 'S'
+			lImpEtq:=.T.
+		Else
+	//		If MsgYesNo("Imprime Etiquetas ?")               //RETIRADO PARA NÃO SOLICITAR A EMISSÃO DE ETQ PARA TODOS OS ITENS
+//				lImpEtq:=.T.                                 //Quando não precisar imprimir mais etq, basta alterar o parametro para .F. (Antonio 23/11/18)
+	//		EndIf
+
+			If cParSN == 'N'
+				lImpEtq:=.F.     //Não precisa imprimir as etiquetas no caso de etiqueta de componente, so gera na CB0 mas não imprime
+			Else 
+				lImpEtq:=.T.
+			EndIf
+	
+		EndIf
+	EndIf
+EndIf
+
+If !lImpEtq
+	If ProcName(2) == "APONTPLN"                            // NO APONTAMENTO
+		If cParSN == 'N'
+			lImpEtq:=.F.     //Não precisa imprimir as etiquetas no caso de etiqueta de carrinho, so gera na CB0 mas não imprime
+		Else 
+			lImpEtq:=.T.
+		EndIf
+	EndIf
+EndIf
+
+
+If ProcName(2) == 'U_MT250TOK'     .or.   ProcName(2) =='U_A250ETRAN'       //no caso de OP apontada pelo padrão - antonio 26/10/16
+	cMdrEtPlan := SC2->C2_OPMIDO
+	If !lImpEtq
+		If cParSN == 'N'
+			lImpEtq:=.F.     //Não precisa imprimir as etiquetas no caso de etiqueta de carrinho, so gera na CB0 mas não imprime
+		Else 
+			lImpEtq:=.T.
+		EndIf
+	EndIf
+EndIf
+  
+If GetMv("MV_INTACD") <> "1"
+	Return( nil )
+EndIf
+
+// Verifica se a etiqueta é da midori. Se for, pega o plano que está em D1_LOTEFOR
+If (ProcName(2) == "ACDI10NF" .Or. ProcName(2) == "U_ETQACD") .and. cFornec == "000148" .and. ! Empty( SD1->D1_LOTEFOR )
+	cMdrEtPlan := SD1->D1_LOTEFOR
+EndIf
+
+// Etiqueta no apontamento da OP
+If Valtype( cOrigem ) == "C" .and. cOrigem == "SD3"
+	// If SB1->B1_ZZIMPET <> "S" .or. SB1->B1_ZZIMPOP <> "S" 
+	If SBZ->BZ_ZZIMPET <> "S" .or. SBZ->BZ_ZZIMPOP <> "S"
+		Return( nil )
+	EndIf
+EndIf
+                            
+// ETIQUETA NA ENTRADA DA NOTAS                                                   
+                    
+// verifica se o produto, apesar de ter que imprimir etiqueta, não deve imprimir para esta nota
+If ! Valtype(cItNFE) == "C" .and. ! Empty(cItNFE)
+	If SD1->( FieldPos("D1_ZZIMPET") ) > 0 .and. SD1->D1_ZZIMPET == "N"
+		// If SB1->B1_ZZETVAR == "S"
+		If SBZ->BZ_ZZETVAR == "S"
+			Return( nil )
+		EndIf
+	EndIf
+EndIf
+
+//lQEMB := SB1->B1_ZZQEACD > 0
+//_nQE  := SB1->B1_ZZQEACD
+lQEMB := SBZ->BZ_ZZQEACD > 0
+_nQE  := SBZ->BZ_ZZQEACD
+
+If lQEmb
+ 
+	_nQtde   := Int(nQtde/_nQE)
+	_nResto  :=MOD( nQtde, _nQE )                                             
+	If _nResto >0
+	   _nQtde++
+	EndIf
+	
+	nQtde   := _nQE
+	nCopias	:= _nQtde
+	nResto  := _nResto
+
+EndIf
+                                                                             
+//-----------------------------------------------------------------------------                                       
+// a rotina de impressão de etiqueta avulsa coloca a quantidade sempre como 1
+// e, no caso da Midori, não pode
+//-----------------------------------------------------------------------------
+If procname(2) == "ACDI10PR" .AND. Procname(3) == "ACDI010"
+	nQtde := MV_PAR06
+EndIf
+
+cLocOri := If(cLocOri==cArmazem,' ',cLocOri)
+nQtde   := If(nQtde==NIL,1,nQtde)
+cCodSep := If(cCodSep==NIL,'',cCodSep)
+
+// Utilizado para impressao etiquetas de Carrinho(diego molume)
+
+If Posicione("SBZ",1,SBZ->BZ_FILIAL+AllTrim(SBZ->BZ_COD),"BZ_XETQVOL") == "S"
+	cProVolu := "S"
+Endif			
+     
+// Campo que informa se imprime ou não etiquetas para este produto
+If Empty(SBZ->BZ_ZZIMPET) .or. SBZ->BZ_ZZIMPET == "N"
+	Return(nil)
+EndIf
+
+If lEscEti
+	Return( nil )
+EndIf
+
+// Ajusta a quantidade de cada volume, de acordo com os produtos
+aVolumes := {}
+If ! IsTelNet() .and. Empty( SBZ->BZ_ZZQTCXA ) .AND. ! lQEMB .AND. ! ( SBZ->BZ_ZZETIQ == "2" )
+
+	If ValType(cCodId) == "U" // Se nao for TELNET e nem reimpressao
+
+		If (ProcName(2) =='U_A250ETRAN' .Or. ProcName(2) == "ACDI10NF" .Or. ProcName(2) == "U_ETQACD" .Or. ProcName(2) == "U_MDRACD01") .And. SBZ->BZ_ZZIMPOP == 'S' //Lectra grupo 48
+			If ProcName(2) == "ACDI10NF" .Or. ProcName(2) == "U_ETQACD"   //no caso das etiquetas vierem da pre-nota de entrada da NF só imprimir se o parametro for .T.
+				If lImpEtq
+					lImpEtq := .T.
+				Else
+					lImpEtq	:= .F.		
+				EndIf
+    		Else
+				If !lImpEtq
+					If cParSN == 'N'
+						lImpEtq:=.F.     //Não precisa imprimir as etiquetas no caso de etiqueta de componente, so gera na CB0 mas não imprime
+					Else 
+						lImpEtq:=.T.
+					EndIf
+	    		EndIf
+    		EndIf
+			aVolumes := Volumes( ParamIXB, @lEscEti )
+			If ! Empty( aVolumes )
+				nCopias := Len( aVolumes )
+			EndIf
+	   /*	Bloco de codigo comentado, estava mostrando tela de romaneio antes da tela do lote
+	   		Else
+			aVolumes := Volumes( ParamIXB, @lEscEti )
+			If ! Empty( aVolumes )
+				nCopias := Len( aVolumes )
+			EndIf */
+		EndIf 
+	EndIf
+	
+EndIf                 
+
+If lEscEti
+	Return( nil )
+EndIf
+
+// Quantidade por caixa                                       
+nTotQtVl := 0
+
+//If ! Empty( SB1->B1_ZZQTCXA ) .and. ! IsTelNet()
+If ! Empty( SBZ->BZ_ZZQTCXA ) .and. ! IsTelNet() 
+    
+	// Utilizado para Impressao Etiqueta Volume		
+	// Diego Mafisolli em 26/05/18
+	If (ProcName(2) == "ACDI10NF" .Or. ProcName(2) == "U_ETQACD").And. cProVolu == "S"
+		nCopias := nQtde
+		nQtde   := SBZ->BZ_ZZQTPRD
+	Else         
+		If !ProcName(2) == "APONTPLN"
+			nCopias := nQtde       
+		Endif
+	EndIf
+
+	//---------------------------------------------------
+	// Calcula a quantidade necessária de
+	// caixas para o produto. Cada caixa = 1 etiqueta
+	//---------------------------------------------------
+	nTotQtVl := nCopias
+	/*If SB1->B1_ZZQTPRD < nCopias
+		nConta    := nCopias / SB1->B1_ZZQTPRD
+		nContaInt := int( nConta )
+		nCaixas   := nContaInt * SB1->B1_ZZQTCXA
+		If nConta > nContaInt
+			nCaixas += SB1->B1_ZZQTCXA
+		EndIf
+	Else
+		nCaixas := SB1->B1_ZZQTCXA
+    EndIf*/
+    
+    If SBZ->BZ_ZZQTPRD < nCopias
+		nConta    := nCopias / SBZ->BZ_ZZQTPRD
+		nContaInt := int( nConta )
+		nCaixas   := nContaInt * SBZ->BZ_ZZQTCXA
+		If nConta > nContaInt
+			nCaixas += SBZ->BZ_ZZQTCXA
+		EndIf
+	Else
+		nCaixas := SBZ->BZ_ZZQTCXA
+    EndIf
+    
+	//---------------------------------------------------
+	// Calcula a quantidade do produto em cada caixa
+	//---------------------------------------------------
+	nQtdeCxa := int( nCopias / nCaixas ) // Qtde em cada uma das caixas
+	nUltCxa  := nCopias - ( nQtdeCxa * nCaixas ) // Qtde na ultima caixa
+
+	For nLoop := 1 to nCaixas
+		if nLoop == nCaixas
+			nQtdeCxa := nQtdeCxa + nUltCxa
+		EndIf                  
+		AAdd( aVolumes, nQtdeCxa ) 	
+	Next 
+	
+	nCopias := Len( aVolumes )
+		
+EndIf
+
+CONOUT("Entrou na rotina de impressao")
+  
+// Comentado por Diego em 21/08/18 - Nao estava imprimindo Etiqueta Apontamento OP
+// If ProcName(2) =='U_MT250TOK'
+//	nCopias := 0
+//EndIf 
+
+If ProcName(2) == 'U_MT250TOK'     .or.   ProcName(2) =='U_A250ETRAN'       //no caso de OP apontada pelo padrão - antonio 26/10/16
+	cArmazem := SC2->C2_LOCAL
+EndIf
+
+
+// Etiqueta padrão de recebimento ( GRANDE ) ou de apontemento do PA via apontamento em lote, customizado
+// pela MIDORI.
+If ( SBZ->BZ_ZZETIQ == "1" .OR. Empty( SBZ->BZ_ZZETIQ ) )
+	cSpool := SuperGetMV("MV_ZZSPL01",.f.,"P2GRAN")
+EndIf
+
+// Etiqueta de TNT do PA, utilizada para imprimir a etiqueta de TNT
+If ( SBZ->BZ_ZZETIQ == "2" )                       
+	cSpool := SuperGetMV("MV_ZZSPL02",.f.,"P2TNT")
+EndIf
+
+// Etiqueta pequena de recebimento. utilizada para etiquetar produtos muito pequenos, como perfis por exemplo.
+If ( SBZ->BZ_ZZETIQ == "3" )                       
+	cSpool := SuperGetMV("MV_ZZSPL03",.f.,"P2PEQ")
+EndIf
+
+// Etiqueta pequena de recebimento. utilizada para etiquetar produtos muito pequenos, como perfis por exemplo.
+If ( SBZ->BZ_ZZETIQ == "4" )                       
+	cSpool := SuperGetMV("MV_ZZSPL04",.f.,"LECTRA")
+EndIf
+                                 
+cSpool := AllTrim( cSpool )
+
+MSCBPRINTER( "ZEBRA", "SPOOL",/* [ nDensidade ]*/, /*[ nTamanho ]*/, .F., /*"1290"*/, /*"172.17.0.161"*/, /*[ cEnv ]*/, /*[ nMemoria ]*/, cSpool, /*[ lDrvWin ]*/, /*[ cPathSpool ]*/ )
+
+MSCBCHKSTATUS(.f.)
+CONOUT("Abriu a impressora")     
+
+For nX := 1 to nCopias
+
+	MSCBBEGIN(1,6)            
+
+	If cCodID#NIL // USADO PARA REIMPRESSAO
+		CBRetEti(cCodID)
+		nqtde 	 := CB0->CB0_QTDE
+		cCodSep  := CB0->CB0_USUARIO
+		cNFEnt   := CB0->CB0_NFENT
+		cSeriee  := CB0->CB0_SERIEE
+		cFornec  := CB0->CB0_FORNEC
+		cLojafo  := CB0->CB0_LOJAFO
+		cArmazem := CB0->CB0_LOCAL
+		cOP      := CB0->CB0_OP
+		cNumSeq  := CB0->CB0_NUMSEQ
+		cLote    := CB0->CB0_LOTE
+		cSLote   := CB0->CB0_SLOTE
+		cCC      := CB0->CB0_CC
+		cLocOri  := CB0->CB0_LOCORI
+		cOPReq	 := CB0->CB0_OPREQ
+		cNumserie:= CB0->CB0_NUMSER		
+		cOrigem  := CB0->CB0_ORIGEM
+		cEndereco:= CB0->CB0_LOCALI
+		cPedido  := CB0->CB0_PEDCOM
+		If CB0->(FieldPos("CB0_ITNFE"))>0
+			cItNFE 	 := CB0->CB0_ITNFE
+		EndIf
+	EndIf
+
+	If !nResto == Nil	
+	   If nResto > 0 .and. nX==nCopias
+	      nQtde  := nResto
+	   EndIf        
+	Endif
+   
+   If Usacb0("01") .or. lX_TESTE
+	   
+		// Tratativa para erro impressao etiqueta TNT/Estoque/Pré-Nota 
+		// Diego 04/05/2018         
+		If (FunName() == "MATA140" .or. ProcName(2) =='U_A250ETRAN' .or. ProcName(2) == "APONTPLN" .or. FunName()=="MACOM01") .And. !ProcName(3) == "U_MDRACD01"
+			If !Empty( aVolumes )
+				If lRVolumes == .T.     //foi aberta a tela de romaneio
+					nQtde := aVolumes[nX,1]
+				Else
+					nQtde := aVolumes[nX]
+				EndIf
+			EndIf
+		Endif
+
+		If (ProcName(2) == "U_MDRACD01" .or. ProcName(2) == "MDRACD01") .And. !lRVolumes
+			If cCodId == Nil   
+				nQtde 	:= If(len(paramixb) >= 1,paramixb[ 1],NIL)
+			Else
+				nQtde := CB0->CB0_QTDE
+			EndIf
+			nCopias	:= If(len(paramixb) >= 4,paramixb[ 4],0)
+		EndIf                                                                                                                   
+
+			                                  //     1      2     3      4      5        6      7        8       9       10        11   12     13  14  15   16     17    18    19   20     21   22     23         24      25
+//		cCodigo := If(cCodID ==NIL,CBGrvEti('01',{cCodPro,nQtde,cCodSep,cNFEnt,cSeriee,cFornec,cLojafo,cPedido,cEndereco,cArmazem,cOp,cNumSeq,NIL,NIL,NIL,cLote,cSLote,dValid,cCC,cLocOri,NIL,cOPReq,cNumserie,cOrigem,cItNFE}),cCodID)
+
+			                                  //            1      2      3       4       5       6   7     8       9       10        11   12     13  14  15   16     17    18    19   20     21   22     23         24      25
+		cCodigo := If(cCodID ==NIL,CBGrvEti('01',{cCodPro,nQtde,cCodSep,cNFEnt,cSeriee,cFornec,cLojafo,,cEndereco,cArmazem,cOp,cNumSeq,NIL,NIL,NIL,cLote,cSLote,dValid,cCC,cLocOri,NIL,cOPReq,cNumserie,cOrigem,cItNFE}),cCodID)
+
+		// Tratativa para erro impressao etiqueta TNT/Estoque/Pré-Nota  
+		// Diego 04/05/2018
+		If (FunName() == "MATA140" .or. ProcName(2) =='U_A250ETRAN').And. !ProcName(3) == "U_ETQACD" .And. !ProcName(3) == "U_MDRACD01"
+			If !Empty( aVolumes )
+				If lRVolumes == .T.     //foi aberta a tela de romaneio
+					RecLock("CB0",.F.)
+					CB0->CB0_LOTEFO := aVolumes[nX,2]
+					cLoteFor:=aVolumes[nX,2]
+					MsUnlock() 
+				EndIf
+			EndIf
+		EndIf
+
+//		If ProcName(2) =='U_AG_APTPLN'      //no caso da finalização do plano, grava cod kit para seleção dos Kits Carrinho - antonio - 14/06/18
+		If ProcName(2) =='APONTPLN'      //no caso da finalização do plano, grava cod kit para seleção dos Kits Carrinho - antonio - 14/06/18
+
+			If SX6->(dbSeek(xFilial("CB0")+'MV_NUMKIT' ))
+				cX6_CONTEUD := SX6->X6_CONTEUD
+			EndIf
+
+			RecLock("CB0",.F.)
+			CB0->CB0_XKIT := cX6_CONTEUD        //GetMv('MV_NUMKIT')
+			MsUnlock() 
+
+		EndIf
+
+	Else
+		cCodigo := SB1->B1_CODBAR
+	EndIf
+	
+	cCodigo := Alltrim(cCodigo)
+	cTipoBar := 'MB07' //128
+	If ! Usacb0("01")
+		If Len(cCodigo) == 8
+			cTipoBar := 'MB03'
+		ElseIf Len(cCodigo) == 13
+			cTipoBar := 'MB04'
+		EndIf
+	EndIf
+      
+	// Etiqueta padrão de recebimento ( GRANDE ) ou de apontemento do PA via apontamento em lote, customizado
+	// pela MIDORI.
+
+	If ( (SBZ->BZ_ZZETIQ == "1" .or. SBZ->BZ_ZZETIQ == "4" ) .OR. Empty( SBZ->BZ_ZZETIQ ) ) 
+
+		If lImpEtq               //nos apontamentos fara todo o processo de inclusão das eqts para posterior transferencia, mas estas não
+		                         //serão mais impressas - Antonio 21/09/18
+	
+			MscbWrite("CT~~CD,~CC^~CT~")
+			MscbWrite("^XA~TA000~JSN^LT0^MNW^MTT^PON^PMN^LH0,0^JMA^PR4,4~SD15^JUS^LRN^CI0^XZ")
+			MscbWrite("^XA")
+			MscbWrite("^MMT")
+			MscbWrite("^PW815")
+			MscbWrite("^LL1215")
+			MscbWrite("^LS0")
+			MscbWrite("^BY7,3,140^FT243,952^BCB,,Y,N")
+			MscbWrite("^FD>;"+cCodigo+"^FS")
+			If ProcName(2) == "U_MDRACD01"
+				If cCarrinho == 1        //'S'
+					MscbWrite("^FT775,783^A0B,45,129^FH\^FDCARRINHO^FS")
+	    		Else
+					MscbWrite("^FT772,1085^A0B,45,129^FH\^FD"+aMeses[Month(dDataAvul)]+" / " + StrZero(Year(dDataAvul),4) +"^FS")
+	    		EndIf
+			Else
+				MscbWrite("^FT772,1085^A0B,45,129^FH\^FD"+aMeses[Month(dDataBase)]+" / " + StrZero(Year(dDataBase),4) +"^FS")
+			EndIf
+			MscbWrite("^FO317,29^GB0,1156,8^FS")
+			MscbWrite("^FO87,30^GB0,1156,7^FS")
+			MscbWrite("^FO527,23^GB154,560,8^FS")
+			MscbWrite("^FO528,575^GB153,612,8^FS")                                                                                                                       
+			IF VALTYPE(cOp) <> "C"
+				cOp := ""
+			EndIf
+	
+			If ProcName(2) == "U_MDRACD01"
+				If cCarrinho == 1  //'S'
+					MscbWrite("^FT74,1182^A0B,34,33^FH\^FDEtiqueta de Carrinho^FS")
+	
+				Else
+					MscbWrite("^FT74,1182^A0B,34,33^FH\^FDEtiqueta Unitaria^FS")
+				EndIf
+			Else
+				MscbWrite("^FT74,1182^A0B,34,33^FH\^FDEtiqueta Unitaria"+IF(SBZ->BZ_ZZQTCXA > 0, "-VOLUME " + AllTrim(Str(nX)) + " de " + AllTrim(Str(nCopias)) + Iif(cOp <> ""," OP ","") + AllTrim(cOP) , "" ) +"^FS")
+			EndIf
+	// SEM ALTERAÇÃO DA FILIAL - 04/10		MscbWrite("^FT74,383^A0B,34,33^FH\^FDMidori Auto Leather Brasil^FS")
+	
+	//ALTERAÇÃO DA FILIAL - 04/10
+			If (ProcName(2) == "ACDI10NF" .Or. ProcName(2) == "U_ETQACD") .and. cFornec == "000148" .and. AllTrim(cLojafo) == '09' 
+	
+				MscbWrite("^FT74,459^A0B,34,33^FH\^FDPNP2 Midori Auto Leather Brasil^FS")
+			Else
+				MscbWrite("^FT74,514^A0B,34,33^FH\^FD"+IIf(AllTrim(SM0->M0_CODFIL)=='08','PNP2', IIf(AllTrim(SM0->M0_CODFIL)=='19','BRB','') )+"^FS")
+				MscbWrite("^FT74,383^A0B,34,33^FH\^FDMidori Auto Leather Brasil^FS")
+			
+			EndIf
+	//ALTERAÇÃO DA FILIAL - 04/10
+			
+			MscbWrite("^FT362,1181^A0B,28,28^FH\^FDCodigo do Produto: "+SB1->B1_COD+"^FS")
+			MscbWrite("^FT412,1182^A0B,39,38^FH\^FD"+SubStr(SB1->B1_DESC,01,50)+"^FS")
+			MscbWrite("^FT457,1182^A0B,39,38^FH\^FD"+SubStr(SB1->B1_DESC,51,50)+"^FS")
+		
+			If Type( "cMdrEtPlan" ) <> "C"
+				cMdrEtPlan := ""
+			EndIf
+			
+			If ValType( cLote ) == "C" .and. ! Empty( cLote )
+				If lRVolumes == .T.     //foi aberta a tela de romaneio
+					MscbWrite("^FT520,1186^A0B,28,28^FH\^FDLote: "+cLote + if( !Empty(cLoteFor), "   Lote Fornecedor: "+cLoteFor, "" )+ if( !Empty(cMdrEtPlan), " Plano:"+cMdrEtPlan, "" ) +"^FS")
+				Else
+					MscbWrite("^FT520,1186^A0B,28,28^FH\^FDLote: "+cLote + if( !Empty(cMdrEtPlan), " Plano:"+cMdrEtPlan, "" )+"^FS")
+				EndIf
+			Else
+				MscbWrite("^FT520,1186^A0B,28,28^FH\^FD"+if( !Empty(cMdrEtPlan), "Plano:"+cMdrEtPlan, " " )+"^FS")
+			EndIf                                              
+			
+			If ! Empty(cNFEnt)
+				MscbWrite("^FT520,334^A0B,28,28^FH\^FDRecebimento: "+DtoC(SF1->F1_DTDIGIT)+"^FS")
+			EndIf                                                                        
+	
+			If ProcName(2) =='U_MT250TOK'   .or.   ProcName(2) =='U_A250ETRAN'    //no caso de OP apontada pelo padrão - antonio 10/11/16
+				MscbWrite("^FT520,304^A0B,28,28^FH\^FDData: "+DtoC(dDataBase)+"^FS")
+			EndIf
+	
+			If ProcName(2) == "U_MDRACD01"
+				MscbWrite("^FT520,288^A0B,28,28^FH\^FDData: "+DtoC(dDataAvul)+"^FS")
+			EndIf		
+	
+			MscbWrite("^FT569,1000^A0B,28,28^FH\^FDUnidade de Medida^FS")
+			MscbWrite("^FT634,920^A0B,52,57^FH\^FD"+SB1->B1_UM+"^FS")
+		
+			//If EMPTY( SB1->B1_ZZQTCXA ) 
+	
+			If ProcName(2) == "U_MDRACD01"
+	
+				MscbWrite("^FT569,371^A0B,28,28^FH\^FDQuantidade^FS")                                             
+				MscbWrite("^FT634,508^A0B,52,57^FH\^FD"+Transform(nQtde,"@E 999,999,999.9999")+"^FS")
+	
+			Else
+	
+				If EMPTY( SBZ->BZ_ZZQTCXA )
+					MscbWrite("^FT569,371^A0B,28,28^FH\^FDQuantidade^FS")                                             
+					MscbWrite("^FT634,508^A0B,52,57^FH\^FD"+Transform(nQtde,"@E 999,999,999.9999")+"^FS")
+				Else
+		
+					IF cProVolu == "S"      //variavel contem todos componentes que obedecerão esta condição.
+						MscbWrite("^FT569,371^A0B,28,28^FH\^FDQtde do Volume^FS")                               //alterado (Antonio) a pedido do THiago em 09/10
+						MscbWrite("^FT634,508^A0B,52,57^FH\^FD"+Transform(nTotQtVl/nCopias,"@E 999,999,999.9999")+"^FS")
+					Else
+						MscbWrite("^FT569,371^A0B,28,28^FH\^FDQtde Total nos "+AllTrim(Str(nCopias))+" Volumes^FS")
+		//				MscbWrite("^FT569,371^A0B,28,28^FH\^FDQtde do Volume^FS")                               //alterado (Antonio) a pedido do THiago em 09/10
+						MscbWrite("^FT634,508^A0B,52,57^FH\^FD"+Transform(nTotQtVl,"@E 999,999,999.9999")+"^FS")
+					EndIf	
+		
+				EndIf
+			
+			EndIf
+					
+			MscbWrite("^LRY^FO727,20^GB0,1175,61^FS^LRN")
+			MscbWrite("^PQ1,0,1,Y^XZ")
+		EndIf
+
+	EndIf
+
+	
+	// Etiqueta de TNT do PA, utilizada para imprimir a etiqueta de TNT 
+
+	If ( SBZ->BZ_ZZETIQ == "2" ) 
+	
+		DO CASE
+			// CLIENTE: ADIENT DO BRASIL		
+			CASE AllTrim(SC2->C2_CLIENTE) == '000002' .And. AllTrim(SC2->C2_PRODUTO) $ '074065|074066|074069|074068|074070|074073|074072|074071|074074|074090|074093|074075|074079|074076|074081|074089|074088|074087|074058|074091|074065|074092|074060|074059|074061|074064|074063|074617|074618|074612|074611|074610|074613|074616|074614|074062'
+			
+				// Etiqueta de TNT utilizada para imprimir a etiqueta de TNT com DataMatrix
+				// 09/09/19 - Diego Mafisolli
+	
+				MscbWrite("CT~~CD,~CC^~CT~")
+				MscbWrite("^XA~TA000~JSN^LT0^MNW^MTD^PON^PMN^LH0,0^JMA^PR4,4~SD15^JUS^LRN^CI0^XZ")
+				MscbWrite("^XA")
+				MscbWrite("^MMT")
+				MscbWrite("^PW559")
+				MscbWrite("^LL0376")
+				MscbWrite("^LS0")
+				MscbWrite("^BY4,3,81^FT171,155^BCN,,Y,N")
+				MscbWrite("^FD>;"+cCodigo+"^FS")
+				MscbWrite("^FT198,55^A0N,28,28^FH\^FDMidori Auto Leather Brasil^FS")
+				MscbWrite("^FT171,219^A0N,20,19^FH\^FD"+SubStr(SB1->B1_DESC,01,26)+' '+"^FS")
+				MscbWrite("^FT171,246^A0N,20,19^FH\^FD"+SubStr(SB1->B1_DESC,27,33)+"^FS")
+	
+	
+				cTxLtPl := ""    
+				
+				If (Type( "cMdrEtOp" ) == "C" .or. ValType( cLote ) == "C") //.and. Type( "cMdrEtPlan" ) <> "C"
+					If ValType( cLote ) == "C"
+						cILt := cLote
+					Else                             
+						// Variavel criada em u_MdrEtOp()
+						// Imprime o numero da OP como numero do lote mesmo que o produto não tenha lote
+						If Type( "cMdrEtOp" ) == "C" 
+							cILt := cMdrEtOp
+						EndIf
+					EndIf
+					cTxLtPl += "Lote:"+ cILt + " "
+				EndIf	 
+				
+				//If Type( "cMdrEtPlan" ) == "C" .and. ! Empty( cMdrEtPlan )
+				//	cTxLtPl += "Plano:" + cMdrEtPlan
+				//EndIf
+				                                                          
+				If ! Empty( cTxLtPl )
+					MscbWrite("^FT171,274^A0N,20,19^FH\^FD"+cTxLtPl+"^FS")
+				EndIf                                               
+					
+				MscbWrite("^FT284,274^A0N,20,19^FH\^FDData: "+DtoC(SC2->C2_DATPRF)+"^FS")
+				
+			   	If Type( "cMdrEtPlan" ) == "C" .and. ! Empty( cMdrEtPlan )
+					MscbWrite("^FT171,303^A0N,20,19^FH\^FDPlano: "+cMdrEtPlan+"^FS")
+					MscbWrite("^FT171,329^A0N,20,19^FH\^FDCod Produto: "+AllTrim(SB1->B1_COD) + "-" + AllTrim(SC2->C2_OPMIDO) +"^FS")
+				Endif
+				
+				MscbWrite("^BY70,70^FT454,297^BXN,7,200,0,0,1,~")
+				MscbWrite("^FH\^FD"+AllTrim(SB1->B1_ATLREF)+"^FS")
+				MscbWrite("^PQ1,0,1,Y^XZ")
+
+		  
+			OTHERWISE
+	
+				MscbWrite("CT~~CD,~CC^~CT~")
+				MscbWrite("^XA~TA000~JSN^LT0^MNW^MTD^PON^PMN^LH0,0^JMA^PR4,4~SD15^JUS^LRN^CI0^XZ")
+				MscbWrite("^XA")
+				MscbWrite("^MMT")
+				MscbWrite("^PW559")
+				MscbWrite("^LL0376")
+				MscbWrite("^LS0")
+				MscbWrite("^BY4,3,81^FT171,155^BCN,,Y,N")
+				MscbWrite("^FD>;"+cCodigo+"^FS")
+				MscbWrite("^FT198,55^A0N,28,28^FH\^FDMidori Auto Leather Brasil^FS")
+				MscbWrite("^FT171,219^A0N,20,19^FH\^FD"+SubStr(SB1->B1_DESC,01,33)+"^FS")
+				MscbWrite("^FT171,246^A0N,20,19^FH\^FD"+SubStr(SB1->B1_DESC,34,33)+"^FS")
+	
+				cTxLtPl := "" 
+				
+				If (Type( "cMdrEtOp" ) == "C" .or. ValType( cLote ) == "C") //.and. Type( "cMdrEtPlan" ) <> "C"
+					If ValType( cLote ) == "C"
+						cILt := cLote
+					Else                             
+						// Variavel criada em u_MdrEtOp()
+						// Imprime o numero da OP como numero do lote mesmo que o produto não tenha lote
+						If Type( "cMdrEtOp" ) == "C" 
+							cILt := cMdrEtOp
+						EndIf
+					EndIf
+					cTxLtPl += "Lote:"+ cILt + " "
+				EndIf	 
+				
+				If Type( "cMdrEtPlan" ) == "C" .and. ! Empty( cMdrEtPlan )
+					cTxLtPl += "Plano:" + cMdrEtPlan
+				EndIf
+				                                                          
+				If ! Empty( cTxLtPl )
+					MscbWrite("^FT171,274^A0N,20,19^FH\^FD"+cTxLtPl+"^FS")
+				EndIf                                              
+	
+				MscbWrite("^FT171,301^A0N,20,19^FH\^FDData: "+DtoC(SC2->C2_DATPRF)+"^FS")
+				MscbWrite("^FT171,329^A0N,20,19^FH\^FDCod Produto: "+AllTrim(SB1->B1_COD) + "-" + AllTrim(SC2->C2_OPMIDO) +"^FS")
+				MscbWrite("^PQ1,0,1,Y^XZ")
+				
+		ENDCASE
+	EndIf
+		     
+	// Etiqueta pequena de recebimento. utilizada para etiquetar produtos muito pequenos, como perfis por exemplo.
+	If ( SBZ->BZ_ZZETIQ == "3" )                      
+
+		MscbWrite("CT~~CD,~CC^~CT~")
+		MscbWrite("^XA~TA000~JSN^LT0^MNW^MTT^PON^PMN^LH0,0^JMA^PR4,4~SD15^JUS^LRN^CI0^XZ")
+		MscbWrite("^XA")
+		MscbWrite("^MMT")
+		MscbWrite("^PW559")
+		MscbWrite("^LL0200")
+		MscbWrite("^LS0")
+		MscbWrite("^FT44,48^A0N,23,24^FH\^FDProduto: "+SB1->B1_COD+"^FS")
+		MscbWrite("^FT44,89^A0N,19,24^FH\^FD2"+SubStr(SB1->B1_DESC,25,24)+"^FS")
+		MscbWrite("^FT44,70^A0N,19,24^FH\^FD"+SubStr(SB1->B1_DESC,01,24)+"^FS")
+		MscbWrite("^BY3,3,54^FT254,166^BCN,,Y,N")
+		MscbWrite("^FD>;"+cCodigo+"^FS")
+		If ValType( cLote ) == "C"
+			MscbWrite("^FT43,128^A0N,23,24^FH\^FDLote: "+cLote+"^FS")
+		EndIf
+		MscbWrite("^FO38,96^GB508,0,8^FS")
+		MscbWrite("^FT44,152^A0N,23,24^FH\^FDQtde.: "+AllTrim(Transform(nQtde,"@E 999,999,999.9999"))+"^FS")
+		MscbWrite("^FT44,180^A0N,23,24^FH\^FDU.M.: "+SB1->B1_UM+"^FS")
+		MscbWrite("^PQ1,0,1,Y^XZ")
+	
+	EndIf
+	
+	sConteudo:=MSCBEND() 
+	
+	If Type('cProgImp')=="C" .and. cProgImp=="ACDV120"
+	    GravaCBE(CB0->CB0_CODETI,SB1->B1_COD,nQtde,cLote,dValid)
+	    Conout("gravou no CBE")
+	EndIf	
+	
+Next
+
+MSCBCLOSEPRINTER()                                              
+
+cMdrEtPlan := ""
+
+ConOut("Encerrou a rotina de impressao")
+
+Return sConteudo
+
+
+/*
+ÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜ
+±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±
+±±ÉÍÍÍÍÍÍÍÍÍÍÑÍÍÍÍÍÍÍÍÍÍËÍÍÍÍÍÍÍÑÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍËÍÍÍÍÍÍÑÍÍÍÍÍÍÍÍÍÍÍÍÍ»±±
+±±ºPrograma  ³img01cx   ºAutor  ³Sandro Valex        º Data ³  19/06/01   º±±
+±±ÌÍÍÍÍÍÍÍÍÍÍØÍÍÍÍÍÍÍÍÍÍÊÍÍÍÍÍÍÍÏÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÊÍÍÍÍÍÍÏÍÍÍÍÍÍÍÍÍÍÍÍÍ¹±±
+±±ºDesc.     ³Ponto de entrada referente a imagem de identificacao do     º±±
+±±º          ³produto para caixa a agranel                                º±±
+±±ÌÍÍÍÍÍÍÍÍÍÍØÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍ¹±±
+±±ºUso       ³ AP5                                                        º±±
+±±ÈÍÍÍÍÍÍÍÍÍÍÏÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍ¼±±
+±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±
+ßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßß
+*/
+User Function Img01CX //dispositivo de identificacao de produto
+Local cCodigo
+Local sConteudo
+Local cTipoBar
+Local nX
+Local nqtde 	:= If(len(paramixb) >= 1,paramixb[ 1],NIL)
+Local cCodSep 	:= If(len(paramixb) >= 2,paramixb[ 2],NIL)
+Local cCodID 	:= If(len(paramixb) >= 3,paramixb[ 3],NIL)
+Local nCopias	:= If(len(paramixb) >= 4,paramixb[ 4],NIL)
+Local cArmazem  := If(len(paramixb) >= 5,paramixb[ 5],NIL)
+Local cEndereco := If(len(paramixb) >= 6,paramixb[ 6],NIL)
+Local cSpool    := SuperGetMV("MV_ZZSPL01",.f.,"P2GRAN")
+                                     
+dbSelectArea("SBZ")
+dbSetOrder(1)
+If ! dbSeek( xFilial("SBZ") + SB1->B1_COD )
+	Return(nil)
+EndIf          
+
+//nQtde   := If(nQtde==NIL,SB1->B1_ZZQEACD,nQtde)
+nQtde   := If(nQtde==NIL,SBZ->BZ_ZZQEACD,nQtde)
+cCodSep := If(cCodSep==NIL,'',cCodSep)
+
+MSCBPRINTER( "ZEBRA", "SPOOL",/* [ nDensidade ]*/, /*[ nTamanho ]*/, .F., /*"1290"*/, /*"172.17.0.161"*/, /*[ cEnv ]*/, /*[ nMemoria ]*/, cSpool, /*[ lDrvWin ]*/, /*[ cPathSpool ]*/ )
+
+MSCBCHKSTATUS(.f.)
+
+For nX := 1 to nCopias
+	If Usacb0("01")
+		cCodigo := If(cCodID ==NIL,CBGrvEti('01',{SB1->B1_COD,nQtde,cCodSep,NIL,NIL,NIL,NIL,NIL,cEndereco,cArmazem,,,,,,,,}),cCodID)
+	Else
+		cCodigo := SB1->B1_CODBAR
+	EndIf
+	cCodigo := Alltrim(cCodigo)
+	cTipoBar := 'MB07' //128
+	If ! Usacb0("01")
+		If Len(cCodigo) == 8
+			cTipoBar := 'MB03'
+		ElseIf Len(cCodigo) == 13
+			cTipoBar := 'MB04'
+		EndIf
+	EndIf
+
+	MSCBBEGIN(1,6)
+	MSCBBOX(30,05,76,05)
+	MSCBBOX(02,12.7,76,12.7)        
+	MSCBBOX(02,21,76,21)
+	MSCBBOX(30,01,30,12.7,3)
+	//MSCBGRAFIC(2,3,"SIGA")
+	MSCBSAY(33,02,'CAIXA',"N","0","025,035")
+	MSCBSAY(33,06,"CODIGO","N","A","012,008")
+	MSCBSAY(33,08, AllTrim(SB1->B1_COD), "N", "0", "032,035")
+	MSCBSAY(05,14,"DESCRICAO","N","A","012,008")
+	MSCBSAY(05,17,SB1->B1_DESC,"N", "0", "020,030")
+	MSCBSAYBAR(23,22,cCodigo,"N",cTipoBar,8.36,.F.,.T.,.F.,,2,1,.F.,.F.,"1",.T.)
+	//MSCBInfoEti("Produto Granel","30X100")
+	sConteudo:=MSCBEND()
+Next
+
+MSCBCLOSEPRINTER()
+
+Return sConteudo
+
+/*
+ÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜ
+±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±
+±±ÉÍÍÍÍÍÍÍÍÍÍÑÍÍÍÍÍÍÍÍÍÍËÍÍÍÍÍÍÍÑÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍËÍÍÍÍÍÍÑÍÍÍÍÍÍÍÍÍÍÍÍÍ»±±
+±±ºPrograma  ³img01De   ºAutor  ³Sandro Valex        º Data ³  19/06/01   º±±
+±±ÌÍÍÍÍÍÍÍÍÍÍØÍÍÍÍÍÍÍÍÍÍÊÍÍÍÍÍÍÍÏÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÊÍÍÍÍÍÍÏÍÍÍÍÍÍÍÍÍÍÍÍÍ¹±±
+±±ºDesc.     ³Ponto de entrada referente a imagem de identificacao da     º±±
+±±º          ³Unidade de despacho                                         º±±
+±±ÌÍÍÍÍÍÍÍÍÍÍØÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍ¹±±
+±±ºUso       ³ AP5                                                        º±±
+±±ÈÍÍÍÍÍÍÍÍÍÍÏÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍ¼±±
+±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±
+ßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßß
+*/
+User Function Img01DE //dispositivo de identificacao de unidade de despacho produto
+Local nCopias 	:= If(len(paramixb) >= 1,paramixb[ 1],NIL)
+Local cCodigo 	:= If(len(paramixb) >= 2,Alltrim(paramixb[ 2]),NIL)
+Local cSpool    := SuperGetMV("MV_ZZSPL01",.f.,"P2GRAN")
+
+MSCBPRINTER( "ZEBRA", "SPOOL",/* [ nDensidade ]*/, /*[ nTamanho ]*/, .F., /*"1290"*/, /*"172.17.0.161"*/, /*[ cEnv ]*/, /*[ nMemoria ]*/, cSpool, /*[ lDrvWin ]*/, /*[ cPathSpool ]*/ )
+
+MSCBCHKSTATUS(.f.)
+
+MSCBBEGIN(nCopias,6)
+	MSCBBOX(30,05,76,05)
+	MSCBBOX(02,12.7,76,12.7)
+	MSCBBOX(02,21,76,21)
+	MSCBBOX(30,01,30,12.7,3)
+//	MSCBGRAFIC(2,3,"SIGA")
+	MSCBSAY(33,02,'UNID. DE DESPACHO',"N","0","025,035")
+	MSCBSAY(33,06,"CODIGO","N","A","012,008")
+	MSCBSAY(33,08, AllTrim(SB1->B1_COD), "N", "0", "032,035")
+	MSCBSAY(05,14,"DESCRICAO","N","A","012,008")
+	MSCBSAY(05,17,SB1->B1_DESC,"N", "0", "020,030")
+	MSCBSAYBAR(23,22,cCodigo,"N","MB01",8.36,.F.,.T.,.F.,,2,1,.F.,.F.,"1",.T.)  // codigo intercaldo 2 e 5 para EAN14
+	// MSCBInfoEti("Unid.Despacho","30X100")
+sConteudo:=MSCBEND()
+
+MSCBCLOSEPRINTER()
+
+Return sConteudo
+
+
+
+/**********************************************************************************************************************************/
+Static Function Volumes( aEtiq, lEscEti )
+
+Local cCodigo,sConteudo,cTipoBar, nX
+Local nqtde 	:= If(len(paramixb) >= 1,paramixb[ 1],NIL)
+Local cCodSep 	:= If(len(paramixb) >= 2,paramixb[ 2],NIL)
+Local cCodID 	:= If(len(paramixb) >= 3,paramixb[ 3],NIL)                                                   
+Local nCopias	:= If(len(paramixb) >= 4,paramixb[ 4],0)
+Local cNFEnt  	:= If(len(paramixb) >= 5,paramixb[ 5],NIL)
+Local cSeriee   := If(len(paramixb) >= 6,paramixb[ 6],NIL)
+Local cFornec   := If(len(paramixb) >= 7,paramixb[ 7],NIL)
+Local cLojafo   := If(len(paramixb) >= 8,paramixb[ 8],NIL)
+Local cArmazem  := If(len(paramixb) >= 9,paramixb[ 9],NIL)
+Local cOP       := If(len(paramixb) >=10,paramixb[10],NIL)
+Local cNumSeq   := If(len(paramixb) >=11,paramixb[11],NIL)
+Local cLote     := If(len(paramixb) >=12,paramixb[12],NIL)
+Local cSLote    := If(len(paramixb) >=13,paramixb[13],NIL)
+Local dValid    := If(len(paramixb) >=14,paramixb[14],NIL)
+Local cCC  		:= If(len(paramixb) >=15,paramixb[15],NIL)
+Local cLocOri   := If(len(paramixb) >=16,paramixb[16],NIL)
+Local cOPREQ    := If(len(paramixb) >=17,paramixb[17],NIL)
+Local cNumSerie := If(len(paramixb) >=18,paramixb[18],NIL)
+Local cOrigem   := If(len(paramixb) >=19,paramixb[19],NIL)
+Local cEndereco := If(len(paramixb) >=20,paramixb[20],NIL)
+Local cPedido   := If(len(paramixb) >=21,paramixb[21],NIL)
+Local nResto    := If(len(paramixb) >=22,paramixb[22],0)
+Local cItNFE    := If(len(paramixb) >=23,paramixb[23],NIL)
+Local aRet      := {}
+Local oDlg      := nil
+Local oGrid     := nil
+Local aUM       := StrToKArr(AllTrim(SuperGetMV("ZZ_ACDVLUM",.f.,"MT,KG,TN,MM,M2,M3")),",")
+Local aButtons  := {}
+Local oDescri
+Local cDescri   := "Define variable value"
+Local oItNF
+Local cItNF     := "Define variable value"
+Local oPnlTop          
+Local oProd
+Local cProd     := "Define variable value"
+Local oQtde
+//Local nQtde   := 0
+Local oSay1
+Local oSay2
+Local oSay3
+Local oSay4
+Local oUM
+Local cUM       := "Define variable value"
+Local aFields   := {"D1_QUANT","D1_LOTEFOR"} 
+Local aHeaderEx := {}
+Local aColsEx   := {}
+Local aFieldFill:= {}
+Local aArea     := GetArea() 
+Local lOk       := .f.
+Local nX          
+
+lRVolumes:=.T.
+dbSelectArea("SBZ")
+dbSetOrder(1)
+If ! dbSeek( xFilial("SBZ") + SB1->B1_COD )
+EndIf
+
+cLocOri := If(cLocOri==cArmazem,' ',cLocOri)
+nQtde   := If(nQtde==NIL,SBZ->BZ_ZZQEACD,nQtde)
+cCodSep := If(cCodSep==NIL,'',cCodSep)
+     
+// Produtos com quantidade por embalagem não entram
+If ! Empty(SBZ->BZ_ZZQEACD)
+	Return( aRet )
+EndIf                                                                          
+
+cDescri := SB1->B1_DESC
+
+If ValType( cNfEnt ) == "C"
+	dbSelectArea("SD1")
+	dbSetOrder(1)                    
+	dbSeek( xFilial("SD1") + cNFEnt + cSeriee + cFornec + cLojaFo + SB1->B1_COD + cItNFE )
+	cItNF   := SD1->D1_ITEM
+	cProd   := SD1->D1_COD
+	cUM     := SD1->D1_UM
+Else
+	cItNF   := "    "
+	cProd   := SB1->B1_COD
+	cUM     := SB1->B1_UM
+EndIf
+              
+dbSelectArea("SX3")
+SX3->(dbSetOrder(2))
+For nX := 1 to Len(aFields)
+	If SX3->(dbSeek(aFields[nX]))
+		Aadd(aHeaderEx, {AllTrim(X3Titulo()),SX3->X3_CAMPO,SX3->X3_PICTURE,SX3->X3_TAMANHO,SX3->X3_DECIMAL,"",;
+		SX3->X3_USADO,SX3->X3_TIPO,SX3->X3_F3,SX3->X3_CONTEXT,SX3->X3_CBOX,SX3->X3_RELACAO})
+	EndIf
+Next nX
+
+// Define field values
+For nX := 1 to Len(aFields)
+	If DbSeek(aFields[nX])
+		Aadd(aFieldFill, CriaVar(SX3->X3_CAMPO))
+	Endif
+Next nX
+
+RestArea( aArea )
+                
+Aadd(aFieldFill, .F.)
+Aadd(aColsEx, aFieldFill)
+
+DEFINE MSDIALOG oDlg TITLE "Etiquetas de Volume" FROM 000, 000  TO 500, 700 COLORS 0, 16777215 PIXEL
+
+@ 000, 000 MSPANEL oPnlTop SIZE 350, 042 OF oDlg COLORS 0, 16777215
+@ 000, 002 SAY oSay1 PROMPT "Produto"    SIZE 025, 007 Of oPnlTop COLORS 0, 16777215           PIXEL
+@ 007, 002 MSGET oProd   VAR cProd       SIZE 060, 010 Of oPnlTop COLORS 0, 16777215 READONLY  PIXEL
+
+@ 007, 064 MSGET oDescri VAR cDescri     SIZE 182, 010 Of oPnlTop COLORS 0, 16777215 READONLY  PIXEL
+
+@ 000, 249 SAY oSay2 PROMPT "UM"         SIZE 025, 007 Of oPnlTop COLORS 0, 16777215           PIXEL
+@ 007, 248 MSGET oUM     VAR cUM         SIZE 025, 010 Of oPnlTop COLORS 0, 16777215 READONLY  PIXEL
+
+@ 000, 277 SAY oSay3 PROMPT "Qtde"       SIZE 025, 007 Of oPnlTop COLORS 0, 16777215           PIXEL
+@ 007, 276 MSGET oQtde   VAR nQtde       SIZE 060, 010 Of oPnlTop PICTURE "@E 999,999,999.9999" COLORS 0, 16777215 READONLY PIXEL
+
+@ 021, 002 SAY oSay4 PROMPT "Item da NF" SIZE 037, 007 Of oPnlTop COLORS 0, 16777215           PIXEL
+@ 028, 002 MSGET oItNF   VAR cItNF       SIZE 060, 010 Of oPnlTop COLORS 0, 16777215 READONLY  PIXEL
+
+EnchoiceBar(oDlg, {||If( Confirma( @lEscEti, nQtde,oGrid:aCols, oGrid:aHeader, @aRet ), oDlg:End(),.f.)}, {||If( Cancela( @lEscEti, nQtde ), oDlg:End(),.f.)} )
+
+oGrid := MsNewGetDados():New( 056, 000, 250, 350, GD_INSERT+GD_DELETE+GD_UPDATE, "AllwaysTrue", "AllwaysTrue",,,, 999, "AllwaysTrue", "", "AllwaysTrue", oDlg, aHeaderEx, aColsEx)
+
+// Don't change the Align Order
+oPnlTop:Align := CONTROL_ALIGN_TOP
+oGrid:oBrowse:Align := CONTROL_ALIGN_ALLCLIENT
+
+ACTIVATE MSDIALOG oDlg CENTERED
+
+Return( aRet )
+
+
+
+//**************************************************************************************************************************************************
+Static Function Confirma( lEscEti, nQtde, aCols, aHeader, aRet )
+
+Local aRet  := {}
+Local nSoma := 0
+Local nX    := 1
+
+For nX := 1 to Len( aCols )
+	If aCols[nX,Len(aCols[nx])]                                      	
+		Loop
+	EndIf   
+	nSoma += aCols[nX,1]
+Next nX
+
+If nSoma <> nQtde
+	MsgAlert("Divergência nas quantidades" + CRLF + ;
+             "Somatório dos volumes: " + Transform( nSoma, aHeader[1,3] ) )
+ 	Return( .f. )
+EndIf                                                
+
+For nX := 1 to Len( aCols )
+	If aCols[nX][Len(aCols[nx])]
+		Loop
+	EndIf   
+	AAdd( aRet, {aCols[nX,1],aCols[nX,2]} )
+Next nX
+
+
+Return( .t. )
+
+
+
+//**************************************************************************************************************************************************
+Static Function Cancela( lEscEti, nCopias )
+
+Local lRet := MsgYesNo( "Deseja cancelar a impressão deste item ?" )
+lEscEti := lRet
+
+Return( lRet )
+
+
+//*****************************************************************************************************************************************************
+//*** P.Entrada - Manda quantdade das etiquetas = D1_QUANT e cópias = 1
+//*****************************************************************************************************************************************************
+USER FUNCTION CBQTDVAR()
+Local aArea := GetArea()
+                
+SB5->(DbSetOrder(1))
+If SB5->(DbSeek(xFilial("SB5")+ParamIxb[1]))                      
+
+	RecLock("SB5",.F.)
+	SB5->B5_IMPETI := "1"  // IMPRIME etiqueta
+	MsUnlock()
+Endif
+
+ConOUT( "inventario procname = " + PROCNAME(1) + " " + ProcName(2)  + " " + ProcName(3) + " " + ProcName(4) ) 
+
+RestArea( aArea )
+If Procname(4) == "VLDETIPRO" .or. Procname(3) == "VLDETIPRO" .or. Procname(2) == "VLDETIPRO" .or. Procname(1) == "VLDETIPRO"
+	ConOUT( "CBQTDVAR RETORNOU .F." ) 
+	Return( .f. ) // inventario
+
+Else
+	ConOUT( "CBQTDVAR RETORNOU .t." ) 
+	Return( .t. )
+EndIf                                                                               
+
+RETURN
+
+
+
+
+/*
+Padrao Zebra
+ÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜ
+±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±
+±±ÉÍÍÍÍÍÍÍÍÍÍÑÍÍÍÍÍÍÍÍÍÍËÍÍÍÍÍÍÍÑÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍËÍÍÍÍÍÍÑÍÍÍÍÍÍÍÍÍÍÍÍÍ»±±
+±±ºPrograma  ³img01     ºAutor  ³Sandro Valex        º Data ³  19/06/01   º±±
+±±ÌÍÍÍÍÍÍÍÍÍÍØÍÍÍÍÍÍÍÍÍÍÊÍÍÍÍÍÍÍÏÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÊÍÍÍÍÍÍÏÍÍÍÍÍÍÍÍÍÍÍÍÍ¹±±
+±±ºDesc.     ³Ponto de entrada referente a imagem de identificacao do     º±±
+±±º          ³produto. Padrao Microsiga                                   º±±
+±±ÌÍÍÍÍÍÍÍÍÍÍØÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍ¹±±
+±±ºUso       ³ AP5                                                        º±±
+±±ÈÍÍÍÍÍÍÍÍÍÍÏÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍ¼±±
+±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±
+ßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßß
+*/
+User Function xImg01 //Identificacao de produto
+Local cCodigo,sConteudo,cTipoBar, nX
+Local nqtde 	:= If(len(paramixb) >= 1,paramixb[ 1],NIL)
+Local cCodSep 	:= If(len(paramixb) >= 2,paramixb[ 2],NIL)
+Local cCodID 	:= If(len(paramixb) >= 3,paramixb[ 3],NIL)
+Local nCopias	:= If(len(paramixb) >= 4,paramixb[ 4],0)
+Local cNFEnt  	:= If(len(paramixb) >= 5,paramixb[ 5],NIL)
+Local cSeriee  := If(len(paramixb) >= 6,paramixb[ 6],NIL)
+Local cFornec  := If(len(paramixb) >= 7,paramixb[ 7],NIL)
+Local cLojafo  := If(len(paramixb) >= 8,paramixb[ 8],NIL)
+Local cArmazem := If(len(paramixb) >= 9,paramixb[ 9],NIL)
+Local cOP      := If(len(paramixb) >=10,paramixb[10],NIL)
+Local cNumSeq  := If(len(paramixb) >=11,paramixb[11],NIL)
+Local cLote    := If(len(paramixb) >=12,paramixb[12],NIL)
+Local cSLote   := If(len(paramixb) >=13,paramixb[13],NIL)
+Local dValid   := If(len(paramixb) >=14,paramixb[14],NIL)
+Local cCC  		:= If(len(paramixb) >=15,paramixb[15],NIL)
+Local cLocOri  := If(len(paramixb) >=16,paramixb[16],NIL)
+Local cOPREQ   := If(len(paramixb) >=17,paramixb[17],NIL)
+Local cNumSerie:= If(len(paramixb) >=18,paramixb[18],NIL)
+Local cOrigem  := If(len(paramixb) >=19,paramixb[19],NIL)
+Local cEndereco:= If(len(paramixb) >=20,paramixb[20],NIL)
+Local cPedido  := If(len(paramixb) >=21,paramixb[21],NIL)
+Local nResto   := If(len(paramixb) >=22,paramixb[22],0)
+Local cItNFE   := If(len(paramixb) >=23,paramixb[23],NIL)
+
+cLocOri := If(cLocOri==cArmazem,' ',cLocOri)
+nQtde   := If(nQtde==NIL,SB1->B1_QE,nQtde)
+cCodSep := If(cCodSep==NIL,'',cCodSep)
+
+If nResto > 0 
+   nCopias++
+EndIf
+
+For nX := 1 to nCopias
+	If cCodID#NIL
+		CBRetEti(cCodID)
+		nqtde 	:= CB0->CB0_QTDE
+		cCodSep  := CB0->CB0_USUARIO
+		cNFEnt   := CB0->CB0_NFENT
+		cSeriee  := CB0->CB0_SERIEE
+		cFornec  := CB0->CB0_FORNEC
+		cLojafo  := CB0->CB0_LOJAFO
+		cArmazem := CB0->CB0_LOCAL
+		cOP      := CB0->CB0_OP
+		cNumSeq  := CB0->CB0_NUMSEQ
+		cLote    := CB0->CB0_LOTE
+		cSLote   := CB0->CB0_SLOTE
+		cCC      := CB0->CB0_CC
+		cLocOri  := CB0->CB0_LOCORI
+		cOPReq	:= CB0->CB0_OPREQ
+		cNumserie:= CB0->CB0_NUMSER		
+		cOrigem  := CB0->CB0_ORIGEM
+		cEndereco:= CB0->CB0_LOCALI
+		cPedido  := CB0->CB0_PEDCOM
+		If CB0->(FieldPos("CB0_ITNFE"))>0
+			cItNFE 	 := CB0->CB0_ITNFE
+		EndIf
+	EndIf
+   If nResto > 0 .and. nX==nCopias
+      nQtde  := nResto
+   EndIf
+	If Usacb0("01")
+		cCodigo := If(cCodID ==NIL,CBGrvEti('01',{SB1->B1_COD,nQtde,cCodSep,cNFEnt,cSeriee,cFornec,cLojafo,cPedido,cEndereco,cArmazem,cOp,cNumSeq,NIL,NIL,NIL,cLote,cSLote,dValid,cCC,cLocOri,NIL,cOPReq,cNumserie,cOrigem,cItNFE}),cCodID)
+	Else
+		cCodigo := SB1->B1_COD
+	EndIf
+	cCodigo := Alltrim(cCodigo)
+	cTipoBar := 'MB07' //128
+	If ! Usacb0("01")
+		If Len(cCodigo) == 8
+			cTipoBar := 'MB03'
+		ElseIf Len(cCodigo) == 13
+			cTipoBar := 'MB04'
+		EndIf
+	EndIf
+	MSCBLOADGRF("SIGA.GRF")
+	MSCBBEGIN(1,6)
+	MSCBBOX(30,05,76,05)
+	MSCBBOX(02,12.7,76,12.7)
+	MSCBBOX(02,21,76,21)
+	MSCBBOX(30,01,30,12.7,3)
+	MSCBGRAFIC(2,3,"SIGA")
+	MSCBSAY(33,02,'PRODUTO',"N","0","025,035")
+	MSCBSAY(33,06,"CODIGO","N","A","012,008")
+	MSCBSAY(33,08, AllTrim(SB1->B1_COD), "N", "0", "032,035")
+	MSCBSAY(05,14,"DESCRICAO","N","A","012,008")
+	MSCBSAY(05,16,SB1->B1_DESC,"N", "0", "020,030")
+	If ! Empty(cLote)
+		MSCBSAY(05,18,"Lote "+cLote+'-'+cSLote, "N", "0", "020,030")
+	EndIf
+	MSCBSAYBAR(23,22,cCodigo,"N",cTipoBar,8.36,.F.,.T.,.F.,,2,1,.F.,.F.,"1",.T.)
+	MSCBInfoEti("Produto","30X100")
+	sConteudo:=MSCBEND()
+	If Type('cProgImp')=="C" .and. cProgImp=="ACDV120"
+	    GravaCBE(CB0->CB0_CODETI,SB1->B1_COD,nQtde,cLote,dValid)
+	EndIf	    
+Next
+Return sConteudo
