@@ -195,6 +195,7 @@ Else
 	EndIf
 	//Aviso("Atenção","ROTINA EM DESENVOLVIMENTO.",{"Ok"},1)
 EndIf 
+
     
 RestArea(aAreaCT2)
 
