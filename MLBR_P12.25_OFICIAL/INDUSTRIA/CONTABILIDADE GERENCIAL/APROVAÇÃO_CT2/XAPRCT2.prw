@@ -88,8 +88,10 @@ User Function APRCT2A()
 Local lRet  
 Local X   
 Local aAreaCT2 := CT2->(GetArea())
-    
 
+Local lAprvOK  := .F.
+Local lAprvNOK := .F.
+    
 //CT2->CT2_XUSR   :=  //-  Usuario Inclui
 //CT2->CT2_XUSRAP :=  Alltrim(RetCodUsr())              //-  Usuario Aprova
 
@@ -164,13 +166,30 @@ Else
 				CT2->CT2_XUSRN2 :=  Alltrim(UsrRetName(RetCodUsr()))  //-  Nome user Aprova
 				CT2->CT2_XDTFIM :=  dDataBase                         //-  Data Aprova
 				CT2->(MsUnLock())   
-				Aviso("Atenção","Aprovação concluida com sucesso!",{"Ok"},1)
+				//Aviso("Atenção","Aprovação concluida com sucesso!",{"Ok"},1)
+				if !lAprvOK
+					lAprvOK := .T.
+				endif   
 
 			Else                                                      
-				Aviso("Atenção","Erro ao realizar aprovação.",{"Ok"},1)
+				//Aviso("Atenção","Erro ao realizar aprovação.",{"Ok"},1)
+				if !lAprvNOK
+					lAprvNOK := .T.
+				endif
+				
 			EndIf  			      	 
   
 		Next X
+
+		if lAprvNOK
+			Aviso("Atenção","Erro ao realizar aprovação.",{"Ok"},1)	
+			lAprvOK := .F.
+		endif
+
+		if lAprvOK
+			Aviso("Atenção","Aprovação concluida com sucesso!",{"Ok"},1)	
+		endif
+
     Else
     	Aviso("Atenção","Sem dados para efetivar.",{"Ok"},1)	
 	EndIf
