@@ -218,7 +218,6 @@ if Select('TMP1') > 0
 	TMP1->(dbCloseArea())
 endif
 
-
 cQuery := " SELECT * FROM "  
 cQuery += RetSqlName("SE5")+" SE5 "
 cQuery += " WHERE E5_AGLIMP = '"+_cNum+"' "

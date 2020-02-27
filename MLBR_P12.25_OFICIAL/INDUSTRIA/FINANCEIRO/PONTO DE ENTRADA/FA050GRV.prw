@@ -207,6 +207,7 @@ While .T.
 		Loop			
 	endif	
 	
+	
 	//Obrigar ao usuário informar o histórico padrao...
 	if empty(cCodHi)
 		ApMsgAlert('Favor preencher o código do histórico')

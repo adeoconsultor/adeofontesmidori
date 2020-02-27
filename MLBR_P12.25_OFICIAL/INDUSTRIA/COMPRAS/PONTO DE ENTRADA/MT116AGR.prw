@@ -197,6 +197,7 @@ If  .t. //SF4->F4_DUPLIC == 'S'
 			Loop			
 		endif
 
+
 		If cFrmPag == '1'
 			If (cBco+cAge+cConta+cTpCta) != SA2->(A2_BANCO+A2_AGENCIA+A2_NUMCON+A2_X_TPCON)
 				If !ApMsgYesNo("Dados da Conta Bancária diferente do cadastro do Fornecedor. Confirma ?","Não","Sim")

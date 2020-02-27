@@ -366,6 +366,7 @@ endif
 		Exit
 	EndDo
 	
+	
 	aAdd(aDadosAP,{"TOTAL DA NOTA FISCAL",SF1->F1_VALBRUT})
 	//						1				2	   3	    4					5			6		7		   8				9				10			11		12         13        14      15      16
 	aAdd(aDadosTit, {SF1->F1_PREFIXO,SF1->F1_DUPL,"",SF1->F1_ESPECIE,SF1->F1_FORNECE,SF1->F1_LOJA,cNumAp,SF1->F1_X_BCOFV,SF1->F1_X_AGEFV,SF1->F1_X_CTAFV,cNomFav,cInscr,SF1->F1_X_ORIG,cTpCta,cFrmPag,cHistor, cxHist})
